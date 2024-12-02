@@ -14,11 +14,26 @@ export function useRecentHistory() {
   const [insights, setInsights] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     async function fetchRecentHistory() {
       try {
-        const response = await chrome.runtime.sendMessage<any, RecentHistoryResponse>({ 
-          type: 'GET_RECENT_HISTORY' 
+        // Check if we're in extension context
+        if (typeof chrome === 'undefined' || !chrome.runtime) {
+          throw new Error('Not in extension context');
+        }
+
+        const response = await new Promise<RecentHistoryResponse>((resolve, reject) => {
+          chrome.runtime.sendMessage({ type: 'GET_RECENT_HISTORY' }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+              return;
+            }
+            resolve(response);
+          });
         });
+
+        if (!mounted) return;
 
         if (response.success) {
           setRecentHistory(response.data.map(item => ({
@@ -32,14 +47,21 @@ export function useRecentHistory() {
           throw new Error('Failed to fetch recent history');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        if (!mounted) return;
         console.error('Error fetching recent history:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
     fetchRecentHistory();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return { recentHistory, insights, loading, error };

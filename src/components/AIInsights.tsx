@@ -1,26 +1,22 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
-import { useAIInsights } from '../hooks/useAIInsights';
-import { HistoryEntry } from '../types';
+import { Sparkles, ExternalLink } from 'lucide-react';
+import { cn } from '../utils/cn';
+import { useRecommendations } from '../hooks/useRecommendations';
+import LoadingSpinner from './LoadingSpinner';
+import { motion } from 'framer-motion';
 
-interface AIInsightsProps {
-  historyEntries: HistoryEntry[];
-}
-
-export default function AIInsights({ historyEntries }: AIInsightsProps) {
-  const { insights, searchPatterns, loading, error } = useAIInsights(historyEntries);
+export default function AIInsights() {
+  const { recommendations, loading, error } = useRecommendations();
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Sparkles className="w-5 h-5" />
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+          <Sparkles className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           AI Insights
         </h2>
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        <div className="flex justify-center py-8">
+          <LoadingSpinner size="md" />
         </div>
       </div>
     );
@@ -28,36 +24,80 @@ export default function AIInsights({ historyEntries }: AIInsightsProps) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-red-600">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-red-600 dark:text-red-400">
           <Sparkles className="w-5 h-5" />
-          AI Analysis Error
+          Error Loading Insights
         </h2>
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500 dark:text-red-400">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-        <Sparkles className="w-5 h-5" />
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6"
+    >
+      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+        <Sparkles className="w-5 h-5 text-gray-700 dark:text-gray-300" />
         AI Insights
       </h2>
       
-      {insights && (
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-2">Browsing Patterns</h3>
-          <p className="text-gray-700">{insights}</p>
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+          Looking for this?
+        </h3>
+        
+        <div className="grid grid-cols-1 gap-4">
+          {recommendations.map((rec, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className={cn(
+                "p-4 rounded-lg",
+                "bg-gray-50 dark:bg-gray-700/50",
+                "transition-colors duration-200"
+              )}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                    {rec.title}
+                  </h4>
+                  <motion.a
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    href={rec.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "px-3 py-1 rounded",
+                      "bg-blue-100 dark:bg-blue-900/30",
+                      "text-blue-600 dark:text-blue-400",
+                      "text-sm font-medium",
+                      "hover:bg-blue-200 dark:hover:bg-blue-900/50",
+                      "transition-colors"
+                    )}
+                  >
+                    Visit Site
+                  </motion.a>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 break-all">
+                  {new URL(rec.url).hostname}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {rec.reason}
+                </p>
+              </div>
+            </motion.div>
+          ))}
         </div>
-      )}
-      
-      {searchPatterns && (
-        <div>
-          <h3 className="text-lg font-medium mb-2">Search Patterns</h3>
-          <p className="text-gray-700">{searchPatterns}</p>
-        </div>
-      )}
-    </div>
+      </div>
+    </motion.div>
   );
 }

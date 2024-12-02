@@ -4,7 +4,10 @@ export function isValidUrl(urlString: string): boolean {
   if (!urlString?.trim()) return false;
   
   try {
-    const url = new URL(urlString);
+    // Handle special chrome:// URLs
+    if (urlString.startsWith('chrome://')) return true;
+    
+    const url = new URL(ensureProtocol(urlString));
     return Object.values(VALID_PROTOCOLS).includes(url.protocol as any);
   } catch {
     return false;
@@ -13,6 +16,9 @@ export function isValidUrl(urlString: string): boolean {
 
 export function ensureProtocol(urlString: string, defaultProtocol = DEFAULT_PROTOCOL): string {
   if (!urlString?.trim()) return '';
+  
+  // Don't modify chrome:// URLs
+  if (urlString.startsWith('chrome://')) return urlString;
   
   const hasProtocol = Object.values(PROTOCOL_PREFIXES)
     .some(prefix => urlString.toLowerCase().startsWith(prefix));

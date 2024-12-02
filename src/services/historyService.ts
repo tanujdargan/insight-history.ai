@@ -26,10 +26,10 @@ const MOCK_HISTORY: chrome.history.HistoryItem[] = [
 ];
 
 export async function fetchBrowserHistory(): Promise<HistoryEntry[]> {
-  // Check if we're running in a Chrome extension context
-  const isExtension = typeof chrome !== 'undefined' && chrome.history;
-  
   try {
+    // Check if we're running in a Chrome extension context
+    const isExtension = typeof chrome !== 'undefined' && chrome.history;
+    
     if (!isExtension) {
       console.log('Running in development mode with mock data');
       return MOCK_HISTORY.map(item => ({
@@ -46,7 +46,11 @@ export async function fetchBrowserHistory(): Promise<HistoryEntry[]> {
           reject(new Error(chrome.runtime.lastError.message));
           return;
         }
-        resolve(response?.success ? response.data : []);
+        if (!response?.success) {
+          reject(new Error('Failed to fetch history'));
+          return;
+        }
+        resolve(response.data);
       });
     });
 
@@ -61,7 +65,7 @@ export async function fetchBrowserHistory(): Promise<HistoryEntry[]> {
       }));
   } catch (error) {
     console.error('Error fetching browser history:', error);
-    // Return mock data in case of error
+    // Return mock data in development mode
     return MOCK_HISTORY.map(item => ({
       url: item.url!,
       title: item.title || extractDomain(item.url!),

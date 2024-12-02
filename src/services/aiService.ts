@@ -1,34 +1,37 @@
 import { HistoryEntry } from '../types';
-import { isChromeAIAvailable } from '../utils/featureDetection';
-import { mockAnalyzeHistory, mockCategorizeSearches } from './mockAiService';
-import { chromeAnalyzeHistory, chromeCategorizeSearches } from './chromeAiService';
+import { mockAnalyzeHistory, mockRoastHistory, mockGetRecommendations } from './mockAiService';
 
-export async function analyzeHistory(historyEntries: HistoryEntry[]): Promise<string | null> {
+export async function analyzeHistoryForRoast(historyEntries: HistoryEntry[]): Promise<string> {
   try {
-    const isAIAvailable = isChromeAIAvailable();
-    console.log(`Using ${isAIAvailable ? 'Chrome AI API' : 'Mock AI Service'} for history analysis`);
-    
-    if (isAIAvailable) {
-      return await chromeAnalyzeHistory(historyEntries);
-    }
-    return await mockAnalyzeHistory(historyEntries);
+    // For now, we'll use mock data since Chrome AI API isn't available
+    return await mockRoastHistory(historyEntries);
   } catch (error) {
-    console.error('Error analyzing history:', error);
-    return null;
+    console.error('Error generating roast:', error);
+    throw error;
   }
 }
 
-export async function categorizeSearches(searches: string[]): Promise<string | null> {
+export async function getRecentRecommendations(historyEntries: HistoryEntry[]) {
   try {
-    const isAIAvailable = isChromeAIAvailable();
-    console.log(`Using ${isAIAvailable ? 'Chrome AI API' : 'Mock AI Service'} for search categorization`);
-    
-    if (isAIAvailable) {
-      return await chromeCategorizeSearches(searches);
-    }
-    return await mockCategorizeSearches(searches);
+    const recentEntries = historyEntries
+      .filter(entry => {
+        const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        return entry.lastVisit > hourAgo;
+      })
+      .slice(0, 10);
+
+    return await mockGetRecommendations(recentEntries);
   } catch (error) {
-    console.error('Error categorizing searches:', error);
-    return null;
+    console.error('Error generating recommendations:', error);
+    throw error;
+  }
+}
+
+export async function analyzeHistory(historyEntries: HistoryEntry[]): Promise<string> {
+  try {
+    return await mockAnalyzeHistory(historyEntries);
+  } catch (error) {
+    console.error('Error analyzing history:', error);
+    throw error;
   }
 }

@@ -4,6 +4,11 @@ export function parseUrl(urlString: string): URL | null {
   if (!urlString) return null;
   
   try {
+    // Handle chrome:// URLs
+    if (urlString.startsWith('chrome://')) {
+      return new URL(urlString);
+    }
+
     const urlWithProtocol = ensureProtocol(urlString);
     if (!isValidUrl(urlWithProtocol)) return null;
     return new URL(urlWithProtocol);
@@ -15,7 +20,14 @@ export function parseUrl(urlString: string): URL | null {
 export function extractDomain(urlString: string): string {
   try {
     const url = parseUrl(urlString);
-    return url?.hostname || 'unknown';
+    if (!url) return 'unknown';
+    
+    // Handle chrome:// URLs
+    if (url.protocol === 'chrome:') {
+      return `${url.protocol}//${url.hostname}`;
+    }
+    
+    return url.hostname || 'unknown';
   } catch {
     return 'unknown';
   }

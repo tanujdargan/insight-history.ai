@@ -8,15 +8,4 @@ export default defineConfig({
     react(),
     crx({ manifest }),
   ],
-  build: {
-    rollupOptions: {
-      input: {
-        main: 'index.html',
-        background: 'src/background.ts',
-      },
-      output: {
-        entryFileNames: '[name].js',
-      },
-    },
-  },
 });
