@@ -1,8 +1,12 @@
+// components/Dashboard.tsx
+
 import React from 'react';
 import { BarChart3, Search, Globe2, Clock } from 'lucide-react';
 import TopSites from './TopSites';
 import SearchInsights from './SearchInsights';
-import RecentInsights from './RecentInsights';
+import AIInsights from './AIInsights';
+import BrowsingAnalytics from './BrowsingAnalytics';
+import RoastMeButton from './RoastMeButton';
 import { HistoryEntry } from '../types';
 import { calculateTotalBrowsingHours } from '../utils/analytics';
 
@@ -51,12 +55,17 @@ function Dashboard({ historyEntries }: DashboardProps) {
         />
       </div>
 
-      <RecentInsights />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <AIInsights />
+        <BrowsingAnalytics historyEntries={historyEntries} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 my-8">
         <TopSites historyEntries={historyEntries} />
         <SearchInsights historyEntries={historyEntries} />
       </div>
+
+      <RoastMeButton />
     </div>
   );
 }

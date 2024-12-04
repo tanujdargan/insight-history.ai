@@ -3,6 +3,8 @@ import { Search, ExternalLink } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { HistoryEntry } from '../types';
 import { formatDistanceToNow } from '../utils/date';
+import { useProductivityStore } from '../store/productivityStore';
+import { searchHistory } from '../services/searchService';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -12,17 +14,23 @@ interface SearchBarProps {
 export default function SearchBar({ onSearch, results }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [searchResults, setSearchResults] = useState<HistoryEntry[]>([]);
+  const { settings } = useProductivityStore();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
-    if (newQuery) {
-      onSearch(newQuery);
-      setShowResults(true);
-    } else {
-      onSearch(''); // Reset search when query is empty
+    
+    if (!newQuery) {
+      setSearchResults([]);
       setShowResults(false);
+      return;
     }
+
+    const searchedResults = await searchHistory(newQuery, results, settings.naturalLanguageSearch);
+    setSearchResults(searchedResults);
+    setShowResults(true);
+    onSearch(newQuery);
   };
 
   return (
@@ -31,8 +39,11 @@ export default function SearchBar({ onSearch, results }: SearchBarProps) {
         <input
           type="text"
           value={query}
-          onChange={handleChange}
-          placeholder="Search your history..."
+          onChange={handleSearch}
+          placeholder={settings.naturalLanguageSearch ? 
+            "Search using natural language (e.g., 'find me videos about React hooks')" : 
+            "Search your history..."
+          }
           className={cn(
             "w-full px-4 py-3 pl-12 rounded-lg",
             "bg-white dark:bg-gray-800",
@@ -52,31 +63,32 @@ export default function SearchBar({ onSearch, results }: SearchBarProps) {
           "shadow-lg",
           "z-50"
         )}>
-          {results.slice(0, 5).map((result, index) => (
-            <a
-              key={`${result.url}-${index}`}
-              href={result.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                "flex items-start justify-between p-4",
-                "hover:bg-gray-50 dark:hover:bg-gray-700/50",
-                "group",
-                index !== results.length - 1 && "border-b border-gray-200 dark:border-gray-700"
-              )}
-            >
-              <div className="flex-grow pr-4">
-                <h4 className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600">
-                  {result.title}
-                </h4>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {formatDistanceToNow(result.lastVisit)} ago
-                </p>
-              </div>
-              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-500 flex-shrink-0" />
-            </a>
-          ))}
-          {results.length === 0 && (
+          {searchResults.length > 0 ? (
+            searchResults.map((result, index) => (
+              <a
+                key={`${result.url}-${index}`}
+                href={result.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "flex items-start justify-between p-4",
+                  "hover:bg-gray-50 dark:hover:bg-gray-700/50",
+                  "group",
+                  index !== searchResults.length - 1 && "border-b border-gray-200 dark:border-gray-700"
+                )}
+              >
+                <div className="flex-grow pr-4">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600">
+                    {result.title}
+                  </h4>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {formatDistanceToNow(result.lastVisit)} ago
+                  </p>
+                </div>
+                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-500 flex-shrink-0" />
+              </a>
+            ))
+          ) : (
             <div className="p-4 text-gray-500 dark:text-gray-400 text-center">
               No results found
             </div>

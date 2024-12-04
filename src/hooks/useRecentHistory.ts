@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import { HistoryEntry } from '../types';
-
-interface RecentHistoryResponse {
-  success: boolean;
-  data: chrome.history.HistoryItem[];
-  insights: string | null;
-}
+import { fetchBrowserHistory } from '../services/historyService';
 
 export function useRecentHistory() {
   const [loading, setLoading] = useState(true);
@@ -16,36 +11,21 @@ export function useRecentHistory() {
   useEffect(() => {
     let mounted = true;
 
-    async function fetchRecentHistory() {
+    async function fetchRecent() {
       try {
-        // Check if we're in extension context
-        if (typeof chrome === 'undefined' || !chrome.runtime) {
-          throw new Error('Not in extension context');
-        }
-
-        const response = await new Promise<RecentHistoryResponse>((resolve, reject) => {
-          chrome.runtime.sendMessage({ type: 'GET_RECENT_HISTORY' }, (response) => {
-            if (chrome.runtime.lastError) {
-              reject(new Error(chrome.runtime.lastError.message));
-              return;
-            }
-            resolve(response);
-          });
-        });
-
+        const history = await fetchBrowserHistory();
+        
         if (!mounted) return;
 
-        if (response.success) {
-          setRecentHistory(response.data.map(item => ({
-            url: item.url || '',
-            title: item.title || '',
-            visitCount: item.visitCount || 0,
-            lastVisit: new Date(item.lastVisitTime || Date.now())
-          })));
-          setInsights(response.insights);
-        } else {
-          throw new Error('Failed to fetch recent history');
-        }
+        // Get only recent entries (last 24 hours)
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const recentEntries = history.filter(entry => entry.lastVisit > oneDayAgo);
+        
+        setRecentHistory(recentEntries);
+        
+        // Generate simple insights
+        const domains = new Set(recentEntries.map(entry => new URL(entry.url).hostname));
+        setInsights(`You've visited ${domains.size} different websites in the last 24 hours.`);
       } catch (err) {
         if (!mounted) return;
         console.error('Error fetching recent history:', err);
@@ -57,7 +37,7 @@ export function useRecentHistory() {
       }
     }
 
-    fetchRecentHistory();
+    fetchRecent();
 
     return () => {
       mounted = false;

@@ -1,3 +1,5 @@
+// components/SearchInsights.tsx
+
 import React, { useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { HistoryEntry } from '../types';

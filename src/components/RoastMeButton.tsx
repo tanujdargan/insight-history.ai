@@ -19,7 +19,8 @@ export default function RoastMeButton() {
           "flex items-center gap-2",
           "shadow-lg hover:shadow-xl",
           "transition-all duration-200",
-          "transform hover:scale-105"
+          "transform hover:scale-105",
+          "z-50"
         )}
       >
         <Flame className="w-5 h-5" />

@@ -1,58 +1,70 @@
-// Listen for extension installation
+// background.ts
+
+import { HistoryEntry } from './types';
+
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('History Analytics Extension installed');
+  console.log('AI History Search Extension installed');
 });
 
-// Handle messages from the popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'GET_HISTORY') {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const handleAsyncResponse = async () => {
+    try {
+      switch (request.type) {
+        case 'GET_HISTORY': {
+          const oneMonthAgo = new Date();
+          oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-    chrome.history.search({
-      text: '',
-      startTime: oneWeekAgo.getTime(),
-      maxResults: 1000
-    }, (historyItems) => {
-      sendResponse({
-        success: true,
-        data: historyItems
-      });
-    });
-    return true; // Required for async response
-  }
+          const historyItems = await new Promise<chrome.history.HistoryItem[]>((resolve) => {
+            chrome.history.search(
+              {
+                text: '',
+                startTime: oneMonthAgo.getTime(),
+                maxResults: 10000,
+              },
+              resolve
+            );
+          });
 
-  if (request.type === 'GET_RECENT_HISTORY') {
-    const oneHourAgo = new Date();
-    oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+          const historyEntries: HistoryEntry[] = historyItems.map((item) => ({
+            url: item.url || '',
+            title: item.title || '',
+            visitCount: item.visitCount || 0,
+            lastVisit: item.lastVisitTime ? new Date(item.lastVisitTime) : new Date(),
+          }));
 
-    chrome.history.search({
-      text: '',
-      startTime: oneHourAgo.getTime(),
-      maxResults: 100
-    }, async (historyItems) => {
-      try {
-        // @ts-ignore - Chrome AI API
-        const result = await chrome.runtime.invoke('generateText', {
-          model: 'models/text-bison-001',
-          prompt: `Analyze these recent browsing activities and suggest which ones might be important to revisit or bookmark: ${JSON.stringify(historyItems.map(item => ({ title: item.title, url: item.url })))}`,
-          temperature: 0.7,
-          candidateCount: 1,
-        });
+          return { success: true, data: historyEntries };
+        }
 
-        sendResponse({
-          success: true,
-          data: historyItems,
-          insights: result?.candidates?.[0]?.output || null
-        });
-      } catch (error) {
-        sendResponse({
-          success: true,
-          data: historyItems,
-          insights: null
-        });
+        case 'ANALYZE_SEARCH': {
+          if (chrome.ml && chrome.ml.generateText) {
+            try {
+              const result = await chrome.ml.generateText({
+                prompt: `Optimize the following search query to better match your browsing history:\n\n"${request.query}"\n\nFocus on extracting relevant keywords and phrases.`,
+                temperature: 0.5,
+                maxOutputTokens: 20,
+              });
+              const optimizedQuery = result.text.trim();
+              return { success: true, data: optimizedQuery };
+            } catch (error) {
+              console.error('AI analysis failed:', error);
+              return { success: true, data: request.query };
+            }
+          }
+          return { success: true, data: request.query };
+        }
+
+        default:
+          return { success: false, error: 'Unknown message type' };
       }
-    });
-    return true;
-  }
+    } catch (error) {
+      console.error('Error handling message:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  };
+
+  handleAsyncResponse().then(sendResponse);
+  return true;
 });

@@ -1,26 +1,22 @@
-import { useState, useEffect } from 'react';
-import { HistoryEntry } from '../types';
-import { fetchBrowserHistory } from '../services/historyService';
+// hooks/useHistory.ts
+import { useEffect, useState } from 'react';
+import { HistoryEntry } from '../types'; // Use the correct path to your index.ts
 
 export function useHistory() {
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadHistory() {
-      try {
-        const history = await fetchBrowserHistory();
-        setHistoryEntries(history);
-      } catch (err) {
-        console.error('Error loading history:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load history');
-      } finally {
-        setLoading(false);
+    chrome.runtime.sendMessage({ type: 'GET_HISTORY' }, (response) => {
+      if (response?.success) {
+        setHistoryEntries(response.data);
+      } else {
+        console.error('Failed to fetch history:', response?.error);
+        setError(response?.error || 'Unknown error');
       }
-    }
-
-    loadHistory();
+      setLoading(false);
+    });
   }, []);
 
   return { historyEntries, loading, error };
