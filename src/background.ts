@@ -1,9 +1,16 @@
-// background.ts
-
 import { HistoryEntry } from './types';
 
+let messagePort: chrome.runtime.Port | null = null;
+
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('AI History Search Extension installed');
+  console.log('History Analytics Extension installed');
+});
+
+chrome.runtime.onConnect.addListener((port) => {
+  messagePort = port;
+  port.onDisconnect.addListener(() => {
+    messagePort = null;
+  });
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -11,40 +18,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     try {
       switch (request.type) {
         case 'GET_HISTORY': {
-          const oneMonthAgo = new Date();
-          oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
           const historyItems = await new Promise<chrome.history.HistoryItem[]>((resolve) => {
-            chrome.history.search(
-              {
-                text: '',
-                startTime: oneMonthAgo.getTime(),
-                maxResults: 10000,
-              },
-              resolve
-            );
+            chrome.history.search({
+              text: '',
+              startTime: oneWeekAgo.getTime(),
+              maxResults: 1000
+            }, resolve);
           });
 
-          const historyEntries: HistoryEntry[] = historyItems.map((item) => ({
-            url: item.url || '',
-            title: item.title || '',
-            visitCount: item.visitCount || 0,
-            lastVisit: item.lastVisitTime ? new Date(item.lastVisitTime) : new Date(),
-          }));
-
-          return { success: true, data: historyEntries };
+          return { success: true, data: historyItems };
         }
 
         case 'ANALYZE_SEARCH': {
+          // @ts-ignore - Chrome AI API
           if (chrome.ml && chrome.ml.generateText) {
             try {
+              // @ts-ignore
               const result = await chrome.ml.generateText({
-                prompt: `Optimize the following search query to better match your browsing history:\n\n"${request.query}"\n\nFocus on extracting relevant keywords and phrases.`,
-                temperature: 0.5,
-                maxOutputTokens: 20,
+                prompt: `Convert this natural language query into a search-optimized string: "${request.query}"`,
+                temperature: 0.3,
               });
-              const optimizedQuery = result.text.trim();
-              return { success: true, data: optimizedQuery };
+              return { success: true, data: result.text };
             } catch (error) {
               console.error('AI analysis failed:', error);
               return { success: true, data: request.query };
@@ -58,10 +55,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     } catch (error) {
       console.error('Error handling message:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   };
 

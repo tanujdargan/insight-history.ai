@@ -10,12 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "chrono-node": "^2.7.7",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
     "framer-motion": "^11.0.8",
     "lucide-react": "^0.344.0",
-    "natural": "^8.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.22.3",
@@ -25,8 +23,8 @@
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.23",
-    "@eslint/js": "^9.9.1",
     "@types/chrome": "^0.0.263",
+    "@eslint/js": "^9.9.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

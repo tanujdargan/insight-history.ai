@@ -1,5 +1,3 @@
-// components/Dashboard.tsx
-
 import React from 'react';
 import { BarChart3, Search, Globe2, Clock } from 'lucide-react';
 import TopSites from './TopSites';

@@ -3,7 +3,7 @@ import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { HistoryEntry } from '../types';
-import { searchAndRankHistory } from '../services/searchService';
+import { searchHistory } from '../services/searchService';
 import { useHistory } from '../hooks/useHistory';
 
 interface Message {
@@ -43,24 +43,23 @@ export default function AISearchPage() {
     setIsLoading(true);
 
     try {
-      const results = await searchAndRankHistory(input, historyEntries);
+      const results = await searchHistory(input, historyEntries, true);
       
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         type: 'assistant',
         content: results.length > 0 
           ? "Here are the most relevant results from your history:"
-          : "I couldn't find any matching results in your history. You might try rephrasing your query.",
-        results: results.slice(0, 5)
+          : "I couldn't find any matching results in your history.",
+        results: results.slice(0, 3)
       };
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Search error:', error);
       const errorMessage: Message = {
         id: crypto.randomUUID(),
         type: 'assistant',
-        content: 'Sorry, something went wrong while searching your history. Please try again later.'
+        content: 'Sorry, I encountered an error while searching. Please try again.'
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {

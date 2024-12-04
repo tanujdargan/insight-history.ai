@@ -1,13 +1,5 @@
-// App.tsx
-
 import React from 'react';
-import {
-  HashRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import NavBar from './components/navigation/NavBar';
 import Dashboard from './components/Dashboard';
@@ -41,75 +33,42 @@ export default function App() {
   useTheme();
   const { historyEntries, loading, error } = useHistory();
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-500">Loading history...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500">Error: {error}</p>
-      </div>
-    );
-  }
-
   return (
     <Router>
-      <div
-        className={cn(
-          'min-h-screen bg-gray-50 dark:bg-gray-900',
-          'transition-colors duration-200'
-        )}
-      >
+      <div className={cn(
+        "min-h-screen bg-gray-50 dark:bg-gray-900",
+        "transition-colors duration-200"
+      )}>
         <ErrorBoundary>
           <NavBar />
           <main className="container mx-auto px-4 py-8">
             <Routes>
               <Route path="/" element={<Navigate to="/analytics" replace />} />
-              <Route
-                path="/analytics"
-                element={
-                  <PageWrapper>
-                    <Dashboard historyEntries={historyEntries} />
-                  </PageWrapper>
-                }
-              />
-              <Route
-                path="/productivity"
-                element={
-                  <PageWrapper>
-                    <ProductivityDashboard />
-                  </PageWrapper>
-                }
-              />
-              <Route
-                path="/achievements"
-                element={
-                  <PageWrapper>
-                    <AchievementsPage />
-                  </PageWrapper>
-                }
-              />
-              <Route
-                path="/ai-search"
-                element={
-                  <PageWrapper>
-                    <AISearchPage />
-                  </PageWrapper>
-                }
-              />
-              <Route
-                path="/detailed-history"
-                element={
-                  <PageWrapper>
-                    <DetailedHistoryPage />
-                  </PageWrapper>
-                }
-              />
+              <Route path="/analytics" element={
+                <PageWrapper>
+                  <Dashboard historyEntries={historyEntries} />
+                </PageWrapper>
+              } />
+              <Route path="/productivity" element={
+                <PageWrapper>
+                  <ProductivityDashboard />
+                </PageWrapper>
+              } />
+              <Route path="/achievements" element={
+                <PageWrapper>
+                  <AchievementsPage />
+                </PageWrapper>
+              } />
+              <Route path="/ai-search" element={
+                <PageWrapper>
+                  <AISearchPage />
+                </PageWrapper>
+              } />
+              <Route path="/detailed-history" element={
+                <PageWrapper>
+                  <DetailedHistoryPage />
+                </PageWrapper>
+              } />
               <Route path="*" element={<Navigate to="/analytics" replace />} />
             </Routes>
           </main>
