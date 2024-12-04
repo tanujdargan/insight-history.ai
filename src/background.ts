@@ -33,15 +33,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
 
         case 'ANALYZE_SEARCH': {
-          // @ts-ignore - Chrome AI API
           if (chrome.ml && chrome.ml.generateText) {
             try {
-              // @ts-ignore
+              const sanitizedQuery = request.query.trim();
               const result = await chrome.ml.generateText({
-                prompt: `Convert this natural language query into a search-optimized string: "${request.query}"`,
-                temperature: 0.3,
-              });
-              return { success: true, data: result.text };
+                prompt: `You are an AI assistant that transforms natural language queries into optimized search terms for browsing history lookup.
+
+                Examples:
+                1. User Query: "Find the article about climate change I read last week."
+                  Optimized Search: "climate change article last week"
+
+                2. User Query: "Show me the recipes I looked up yesterday."
+                  Optimized Search: "recipes from yesterday"
+
+                Now, convert the following user query:
+
+                User Query: "${sanitizedQuery}"
+                Optimized Search:`,
+                                temperature: 0.2,
+                                maxTokens: 100,
+                              });
+
+              const optimizedQuery = result.text.trim();
+
+              if (optimizedQuery) {
+                return { success: true, data: optimizedQuery };
+              } else {
+                return { success: true, data: sanitizedQuery };
+              }
             } catch (error) {
               console.error('AI analysis failed:', error);
               return { success: true, data: request.query };
